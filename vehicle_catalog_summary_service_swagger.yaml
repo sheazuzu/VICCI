@@ -1,0 +1,129 @@
+swagger: "2.0"
+info:
+  version: "1.0.0"
+  title: "Vehicle Catalog Summary Service"
+basePath: "/"
+schemes:
+- "http"
+paths:
+  "/tenant/{vicci_tenant}/carlines":
+    get:
+      summary: "Retrieves all carlines for a given VICCI tenant"
+      operationId: "getAllCarlines"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "path"
+        name: "vicci_tenant"
+        type: "string"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          schema:
+            $ref: "#/definitions/CarlineResponse"
+        "400":
+          description: "Invalid Request"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        "404":
+          description: "No data found"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+            
+  "/tenant/{vicci_tenant}/catalog":  
+    get:
+      summary: "Retrieves vehicle catalog summary for a given VICCI tenant and carline"
+      operationId: "getCatalogSummary"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "path"
+        name: "vicci_tenant"
+        type: "string"
+        required: true
+      - in: "query"
+        name: "carline"
+        type: "string"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          schema:
+            $ref: "#/definitions/CatalogResponse"
+        "400":
+          description: "Invalid Request"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        "404":
+          description: "No data found"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+    
+definitions:
+  ErrorResponse:
+    type: "object"
+    properties: 
+      code:
+        type: "integer"
+      message:
+        type: "string"
+
+  CarlineResponse:
+    type: "array"
+    items: 
+      $ref: "#/definitions/CarlineInfo"
+
+  CarlineInfo:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+      code:
+        type: "string"
+        
+  CatalogResponse:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+      code:
+        type: "string"
+      salesgroups:
+        type: "array"
+        items:
+          $ref: "#/definitions/SalesgroupInfo"
+  
+  SalesgroupInfo:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+      code:
+        type: "string"
+      models:
+        type: "array"
+        items:
+          $ref: "#/definitions/ModelInfo"
+          
+  ModelInfo:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+      code:
+        type: "string"
+      version:
+        type: "integer"
+      modelYear:
+        type: "integer"
+    
+    
+    
+    
+    
+    

@@ -1,0 +1,1743 @@
+swagger: '2.0'
+info: {description: 'The Vehicle Information Service (VIS) for requesting vehicle
+    information. The VIS delivers static information about for example carlines, salesgroups
+    and models.', version: '2020.09.2', title: Vehicle Information Service}
+basePath: /vis
+tags:
+- {name: vis-endpoint-controller, description: VIS Endpoint Controller}
+- {name: tenant-data-version-controller, description: Tenant Data Version Controller}
+- {name: ihdcc-consumer-controller, description: IHDCC Consumer Controller}
+securityDefinitions:
+  BasicAuth: {type: basic}
+security:
+- BasicAuth: []
+paths:
+  /catalogue/overview:
+    get:
+      tags: [vis-endpoint-controller]
+      summary: Retrieve a product catalogue for a certain carline.
+      description: Fetch all carline information, salesgroups, model filters and models for a given carline and tenant. All salesgroups of the given carline will be retrieved, then all models and model filters of each salesgroup will be retrieved. All data can be enriched with further information depending on the individual boolean flags.
+      operationId: overviewUsingGET
+      produces: [application/json;charset=UTF-8]
+      parameters:
+      - {name: tenant, in: query, description: 'The tenant identifier you have received
+          for the usage of VICCI. Example: "VW-DE"', required: true, type: string}
+      - {name: tenantDataVersion, in: query, description: The tenant data version. If empty the latest version will be used. Every tenant has its own data version,
+        required: false, type: string}
+      - {name: ruleDate, in: query, description: 'The MBV rule date with format: yyyyMMdd.
+          Only data that is not expired at the set date will be retrieved and evaluated.
+          If empty today will be used. Example: 20191231', required: false, type: string,
+        pattern: '^((19|2[0-9])[0-9]{2})(0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])$'}
+      - {name: carlineKey, in: query, description: 'The carline key. The resulting
+          catalogue overview will contain all salesgroups and models of this carline.
+          Example: 30315', required: true, type: string}
+      - name: mediaParameterSets
+        in: query
+        description: A List of MediaParameterSetIds to identify which Assets should be retrieved. If empty the default MediaParameterSetIds of the tenant will be used.
+        required: false
+        type: array
+        items: {type: string}
+      - {name: fetchPrices, in: query, description: 'Fetches the prices of the carline,
+          salesgroups, models and model filters if set to true. Only models will have
+          individual prices. The prices of carlines, salesgroups and model filters
+          will be formed by the cheapest model of each respective item.', required: false,
+        type: boolean, default: true}
+      - {name: fetchMedia, in: query, description: 'Fetches marketing (E.g.: Feature
+          Description Texts) and media (E.g.: 3D Render Images) assets for the carline,
+          salesgroups, models and model filters if set to true.', required: false,
+        type: boolean, default: false}
+      - {name: fetchMandatory, in: query, description: Fetches the mandatory information for the models if set to true.,
+        required: false, type: boolean, default: true}
+      - {name: fetchTechnical, in: query, description: Fetches the technical specifications of the models if set to true.,
+        required: false, type: boolean, default: true}
+      - {name: fetchEco, in: query, description: Fetches the static efficiency and technical data if set to true. The actual fields returned depend on a tenant specific matching table in VICCI (efficiencyLabelMapping),
+        required: false, type: boolean, default: true}
+      - {name: fetchWltp, in: query, description: 'Fetches the calculated WLTP data
+          for the models if set to true. The WLTP data can either be WLTP-V data or
+          ranges data, depending on the tenant settings', required: false, type: boolean,
+        default: true}
+      - {name: addErrorMps, in: query, description: 'If set to true, an error asset
+          will be added for each MediaParameterSetId which could not be retrieved',
+        required: false, type: boolean, default: false}
+      responses:
+        '200':
+          description: OK
+          schema: {$ref: '#/definitions/CatalogueResponse'}
+        '204': {description: No content}
+        '400':
+          description: In case of a BadRequestError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+        '500':
+          description: In case of an InternalServerError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+  /catalogue/carline/commonfeatures:
+    get:
+      tags: [vis-endpoint-controller]
+      summary: Retrieve all common features of a certain carline
+      description: Retrieve all features which are common for all Models of the given Carline and the given Tenant. The resulting features can be equipped by each model of the given carline.
+      operationId: commonCarlineFeaturesUsingGET
+      produces: [application/json;charset=UTF-8]
+      parameters:
+      - {name: tenant, in: query, description: 'The tenant identifier you have received
+          for the usage of VICCI. Example: "VW-DE"', required: true, type: string}
+      - {name: tenantDataVersion, in: query, description: The tenant data version. If empty the latest version will be used. Every tenant has its own data version,
+        required: false, type: string}
+      - {name: ruleDate, in: query, description: 'The MBV rule date with format: yyyyMMdd.
+          Only data that is not expired at the set date will be retrieved and evaluated.
+          If empty today will be used. Example: 20191231', required: false, type: string,
+        pattern: '^((19|2[0-9])[0-9]{2})(0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])$'}
+      - {name: carlineKey, in: query, description: 'The carline key. The result will
+          contain all common features of this carline. Example: 30315', required: true,
+        type: string}
+      - {name: fetchPrices, in: query, description: Fetches the prices of features if set to true.,
+        required: false, type: boolean, default: true}
+      - {name: fetchMandatory, in: query, description: Fetches the mandatory information for the features if set to true.,
+        required: false, type: boolean, default: true}
+      - {name: fetchPackageContents, in: query, description: 'If set to true, the
+          contents of packages will be provided as individual features in the result.',
+        required: false, type: boolean, default: true}
+      - {name: fetchInvisible, in: query, description: 'If set to true, invisible
+          features that are usually hidden will be retrieved as well. Usually these
+          features are standard features that can not be customized or chosen.', required: false,
+        type: boolean, default: false}
+      - {name: fetchMarketableLevels, in: query, description: Fetches the marketable level of the features if set to true.,
+        required: false, type: boolean, default: false}
+      responses:
+        '200':
+          description: OK
+          schema: {$ref: '#/definitions/CommonCarlineFeaturesResponse'}
+        '204': {description: No content}
+        '400':
+          description: In case of a BadRequestError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+        '500':
+          description: In case of an InternalServerError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+  /catalogue/carline/features:
+    get:
+      tags: [vis-endpoint-controller]
+      summary: Retrieve all features of a certain carline
+      description: Retrieve all individual features for all Models of the given Carline and the given Tenant.
+      operationId: allCarlineFeaturesUsingGET
+      produces: [application/json;charset=UTF-8]
+      parameters:
+      - {name: tenant, in: query, description: 'The tenant identifier you have received
+          for the usage of VICCI. Example: "VW-DE"', required: true, type: string}
+      - {name: tenantDataVersion, in: query, description: The tenant data version. If empty the latest version will be used. Every tenant has its own data version,
+        required: false, type: string}
+      - {name: ruleDate, in: query, description: 'The MBV rule date with format: yyyyMMdd.
+          Only data that is not expired at the set date will be retrieved and evaluated.
+          If empty today will be used. Example: 20191231', required: false, type: string,
+        pattern: '^((19|2[0-9])[0-9]{2})(0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])$'}
+      - {name: carlineKey, in: query, description: 'The carline key. The result will
+          contain all features of this carline. Example: 30315', required: true, type: string}
+      - {name: fetchPrices, in: query, description: Fetches the prices of features if set to true.,
+        required: false, type: boolean, default: true}
+      - {name: fetchMandatory, in: query, description: Fetches the mandatory information for the features if set to true.,
+        required: false, type: boolean, default: true}
+      - {name: fetchPackageContents, in: query, description: 'If set to true, the
+          contents of packages will be provided as individual features in the result.',
+        required: false, type: boolean, default: true}
+      - {name: fetchInvisible, in: query, description: 'If set to true, invisible
+          features that are usually hidden will be retrieved as well. Usually these
+          features are standard features that can not be customized or chosen.', required: false,
+        type: boolean, default: false}
+      - {name: fetchMarketableLevels, in: query, description: Fetches the marketable level of the features if set to true.,
+        required: false, type: boolean, default: false}
+      responses:
+        '200':
+          description: OK
+          schema: {$ref: '#/definitions/CommonCarlineFeaturesResponse'}
+        '204': {description: No content}
+        '400':
+          description: In case of a BadRequestError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+        '500':
+          description: In case of an InternalServerError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+  /catalogue/carlineDetails:
+    get:
+      tags: [vis-endpoint-controller]
+      summary: Retrieve one carline
+      description: Retrieve one carline for the given tenant and the given carlineKey. It can be enriched with additional data depending on the boolean flags.
+      operationId: carlineDetailsUsingGET
+      produces: [application/json;charset=UTF-8]
+      parameters:
+      - {name: tenant, in: query, description: 'The tenant identifier you have received
+          for the usage of VICCI. Example: "VW-DE"', required: true, type: string}
+      - {name: tenantDataVersion, in: query, description: The tenant data version. If empty the latest version will be used. Every tenant has its own data version,
+        required: false, type: string}
+      - {name: ruleDate, in: query, description: 'The MBV rule date with format: yyyyMMdd.
+          Only data that is not expired at the set date will be retrieved and evaluated.
+          If empty today will be used. Example: 20191231', required: false, type: string,
+        pattern: '^((19|2[0-9])[0-9]{2})(0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])$'}
+      - {name: carlineKey, in: query, description: 'The carline key. The result will
+          contain the carline. Example: 30315', required: true, type: string}
+      - name: mediaParameterSets
+        in: query
+        description: A List of MediaParameterSetIds to identify which Assets should be retrieved. If empty the default MediaParameterSetIds of the tenant will be used.
+        required: false
+        type: array
+        items: {type: string}
+      - {name: fetchPrices, in: query, description: Fetches the prices of the carline if set to true. The prices will be formed by the cheapest model of the respective carline. The carline contains the reference model containing basic information about itself and its prices. This model is the cheapest model of the carline.,
+        required: false, type: boolean, default: true}
+      - {name: fetchMedia, in: query, description: 'Fetches marketing (E.g.: Feature
+          Description Texts) and media (E.g.: 3D Render Images) assets for the carline
+          if set to true.', required: false, type: boolean, default: false}
+      - {name: addErrorMps, in: query, description: 'If set to true, an error asset
+          will be added for each MediaParameterSetId which could not be retrieved',
+        required: false, type: boolean, default: false}
+      responses:
+        '200':
+          description: OK
+          schema: {$ref: '#/definitions/CarlineResponse'}
+        '204': {description: No content}
+        '400':
+          description: In case of a BadeRequestError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+        '500':
+          description: In case of a InternalServerError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+  /catalogue/carlines:
+    get:
+      tags: [vis-endpoint-controller]
+      summary: Retrieve carlines
+      description: Retrieve all carlines for the given tenant. They can be enriched with additional data depending on the boolean flags.
+      operationId: carlinesUsingGET
+      produces: [application/json;charset=UTF-8]
+      parameters:
+      - {name: tenant, in: query, description: 'The tenant identifier you have received
+          for the usage of VICCI. Example: "VW-DE"', required: true, type: string}
+      - {name: tenantDataVersion, in: query, description: The tenant data version. If empty the latest version will be used. Every tenant has its own data version,
+        required: false, type: string}
+      - {name: ruleDate, in: query, description: 'The MBV rule date with format: yyyyMMdd.
+          Only data that is not expired at the set date will be retrieved and evaluated.
+          If empty today will be used. Example: 20191231', required: false, type: string,
+        pattern: '^((19|2[0-9])[0-9]{2})(0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])$'}
+      - name: mediaParameterSets
+        in: query
+        description: A List of MediaParameterSetIds to identify which Assets should be retrieved. If empty the default MediaParameterSetIds of the tenant will be used.
+        required: false
+        type: array
+        items: {type: string}
+      - {name: fetchPrices, in: query, description: Fetches the prices of the carlines if set to true. The prices will be formed by the cheapest models of each respective carline. Each carline contains a reference model containing basic information about itself and its prices. This model is the cheapest model of the carline.,
+        required: false, type: boolean, default: true}
+      - {name: fetchMedia, in: query, description: 'Fetches marketing (E.g.: Feature
+          Description Texts) and media (E.g.: 3D Render Images) assets for the carlines
+          if set to true.', required: false, type: boolean, default: false}
+      - {name: addErrorMps, in: query, description: 'If set to true, an error asset
+          will be added for each MediaParameterSetId which could not be retrieved',
+        required: false, type: boolean, default: false}
+      responses:
+        '200':
+          description: OK
+          schema: {$ref: '#/definitions/CarlinesResponse'}
+        '204': {description: No content}
+        '400':
+          description: In case of a BadRequestError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+        '500':
+          description: In case of a InternalServerError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+  /catalogue/model/features:
+    get:
+      tags: [vis-endpoint-controller]
+      summary: Retrieve features
+      description: Retrieve all features for a given carline, salesgroup, an explicit model and the given Tenant. The features are all features that are equippable by the given model. They can be enriched with additional data depending on the boolean flags. The call can retrieve exteriors, interiors and/or features, depending on the flags.
+      operationId: featuresUsingGET
+      produces: [application/json;charset=UTF-8]
+      parameters:
+      - {name: tenant, in: query, description: 'The tenant identifier you have received
+          for the usage of VICCI. Example: "VW-DE"', required: true, type: string}
+      - {name: tenantDataVersion, in: query, description: The tenant data version. If empty the latest version will be used. Every tenant has its own data version,
+        required: false, type: string}
+      - {name: ruleDate, in: query, description: 'The MBV rule date with format: yyyyMMdd.
+          Only data that is not expired at the set date will be retrieved and evaluated.
+          If empty today will be used. Example: 20191231', required: false, type: string,
+        pattern: '^((19|2[0-9])[0-9]{2})(0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])$'}
+      - {name: carlineKey, in: query, description: 'The optional carline key. The
+          carline key is part of the explicit definition of the model which features
+          are to be retrieved. Example: 30315', required: false, type: string}
+      - {name: salesgroupKey, in: query, description: 'The salesgroup key. The salesgroup
+          key is part of the explicit definition of the model which features are to
+          be retrieved. Example: 37080', required: true, type: string}
+      - {name: modelKey, in: query, description: 'The model key including the model
+          extensions separated by a dollar sign ($) of the model which features are
+          to be retrieved. Example: 6C134V$MAAUE0J$MINDFC1$...', required: true, type: string}
+      - {name: modelYear, in: query, description: 'The year the model has been or
+          will be released. Used for explicitly identifying the model. Example: 2019',
+        required: true, type: string}
+      - {name: modelVersion, in: query, description: 'The version of the model. Used
+          for explicitly identifying the model. Example: 1', required: true, type: string}
+      - name: mediaParameterSets
+        in: query
+        description: A List of MediaParameterSetIds to identify which Assets should be retrieved. If empty the default MediaParameterSetIds of the tenant will be used.
+        required: false
+        type: array
+        items: {type: string}
+      - {name: fetchPrices, in: query, description: Fetches the prices of the features if set to true.,
+        required: false, type: boolean, default: true}
+      - {name: fetchMandatory, in: query, description: Fetches the mandatory information for the features if set to true.,
+        required: false, type: boolean, default: true}
+      - {name: fetchPackageContents, in: query, description: 'If set to true, the
+          contents of packages will be provided as individual features in the result.',
+        required: false, type: boolean, default: true}
+      - {name: fetchInvisible, in: query, description: 'If set to true, invisible
+          features that are usually hidden will be retrieved as well. Usually these
+          features are standard features that can not be customized or chosen.', required: false,
+        type: boolean, default: false}
+      - {name: fetchExteriors, in: query, description: 'If set to true, available
+          exterior colors for the model will be retrieved', required: false, type: boolean,
+        default: true}
+      - {name: fetchInteriors, in: query, description: 'If set to true, available
+          interior colors for the model will be retrieved', required: false, type: boolean,
+        default: true}
+      - {name: fetchFeatures, in: query, description: 'If set to true, available features
+          for the model will be retrieved', required: false, type: boolean, default: true}
+      - {name: fetchFeatureGroups, in: query, description: 'If set to true, the feature
+          groups containing and grouping the individual features will be provided',
+        required: false, type: boolean, default: true}
+      - {name: fetchMedia, in: query, description: 'Fetches marketing (E.g.: Feature
+          Description Texts) and media (E.g.: 3D Render Images) assets for the features
+          if set to true.', required: false, type: boolean, default: false}
+      - {name: fetchMarketableLevels, in: query, description: Fetches the marketable level of the features if set to true.,
+        required: false, type: boolean, default: false}
+      - {name: addErrorMps, in: query, description: 'If set to true, an error asset
+          will be added for each MediaParameterSetId which could not be retrieved',
+        required: false, type: boolean, default: false}
+      responses:
+        '200':
+          description: OK
+          schema: {$ref: '#/definitions/FeaturesResponse'}
+        '204': {description: No content}
+        '400':
+          description: In case of a BadRequestError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+        '500':
+          description: In case of an InternalServerError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+  /catalogue/model/featuregroups:
+    get:
+      tags: [vis-endpoint-controller]
+      summary: Retrieve all feature groups for a certain model
+      description: Fetch all feature groups for a given carline, salesgroup, explicit model and the given Tenant. The feature groups consist of feature references, containing only the feature codes
+      operationId: featureGroupsUsingGET
+      produces: [application/json;charset=UTF-8]
+      parameters:
+      - {name: tenant, in: query, description: 'The tenant identifier you have received
+          for the usage of VICCI. Example: "VW-DE"', required: true, type: string}
+      - {name: tenantDataVersion, in: query, description: The tenant data version. If empty the latest version will be used. Every tenant has its own data version,
+        required: false, type: string}
+      - {name: ruleDate, in: query, description: 'The MBV rule date with format: yyyyMMdd.
+          Only data that is not expired at the set date will be retrieved and evaluated.
+          If empty today will be used. Example: 20191231', required: false, type: string,
+        pattern: '^((19|2[0-9])[0-9]{2})(0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])$'}
+      - {name: carlineKey, in: query, description: 'The optional carline key. The
+          carline key is part of the explicit definition of the model which features
+          are to be retrieved. Example: 30315', required: false, type: string}
+      - {name: salesgroupKey, in: query, description: 'The salesgroup key. The salesgroup
+          key is part of the explicit definition of the model which features are to
+          be retrieved. Example: 37080', required: true, type: string}
+      - {name: modelKey, in: query, description: 'The model key including the model
+          extensions separated by a dollar sign ($) of the model which features are
+          to be retrieved. Example: 6C134V$MAAUE0J$MINDFC1$...', required: true, type: string}
+      - {name: modelYear, in: query, description: 'The year the model has been or
+          will be released. Used for explicitly identifying the model. Example: 2019',
+        required: true, type: string}
+      - {name: modelVersion, in: query, description: 'The version of the model. Used
+          for explicitly identifying the model. Example: 1', required: true, type: string}
+      - {name: fetchPrices, in: query, description: 'Deprecated: Should not be used
+          at the moment. Leave at default value', required: false, type: boolean,
+        default: true}
+      - {name: fetchMandatory, in: query, description: 'Deprecated: Should not be
+          used at the moment. Leave at default value', required: false, type: boolean,
+        default: true}
+      - {name: fetchPackageContents, in: query, description: 'If set to true, the
+          contents of packages will be provided as individual features in the result.',
+        required: false, type: boolean, default: true}
+      - {name: fetchInvisible, in: query, description: 'If set to true, invisible
+          features that are usually hidden will be retrieved as well. Usually these
+          features are standard features that can not be customized or chosen.', required: false,
+        type: boolean, default: false}
+      responses:
+        '200':
+          description: OK
+          schema: {$ref: '#/definitions/FeatureGroupsResponse'}
+        '204': {description: No content}
+        '400':
+          description: In case of a BadRequestError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+        '500':
+          description: In case of an InternalServerError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+  /catalogue/models:
+    get:
+      tags: [vis-endpoint-controller]
+      summary: Retrieve models of a specific salesgroup
+      description: Retrieve all models for a given carline, salesgroup and the given Tenant. They can be enriched with additional data depending on the boolean flags.
+      operationId: modelsUsingGET
+      produces: [application/json;charset=UTF-8]
+      parameters:
+      - {name: tenant, in: query, description: 'The tenant identifier you have received
+          for the usage of VICCI. Example: "VW-DE"', required: true, type: string}
+      - {name: tenantDataVersion, in: query, description: The tenant data version. If empty the latest version will be used. Every tenant has its own data version,
+        required: false, type: string}
+      - {name: ruleDate, in: query, description: 'The MBV rule date with format: yyyyMMdd.
+          Only data that is not expired at the set date will be retrieved and evaluated.
+          If empty today will be used. Example: 20191231', required: false, type: string,
+        pattern: '^((19|2[0-9])[0-9]{2})(0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])$'}
+      - {name: carlineKey, in: query, description: 'The optional carline key. The
+          carline key is part of the explicit definition of the model which features
+          are to be retrieved. Example: 30315', required: false, type: string}
+      - {name: salesgroupKey, in: query, description: 'The salesgroup key. The salesgroup
+          key is part of the explicit definition of the model which features are to
+          be retrieved. Example: 37080', required: true, type: string}
+      - name: modelFilter
+        in: query
+        description: 'Optional model filters, which are used to only retrieve models
+          with matching model groups. Each model filter must consist of a type and
+          a specific value separated by a colon. Multiple model filters can be set,
+          which means that only models are retrieved, that match every filter. Example:
+          EquipmentLine:GTI'
+        required: false
+        type: array
+        items: {type: string}
+        collectionFormat: multi
+      - name: mediaParameterSets
+        in: query
+        description: A List of MediaParameterSetIds to identify which Assets should be retrieved. If empty the default MediaParameterSetIds of the tenant will be used.
+        required: false
+        type: array
+        items: {type: string}
+      - {name: fetchPrices, in: query, description: Fetches the prices of the models if set to true.,
+        required: false, type: boolean, default: true}
+      - {name: fetchMandatory, in: query, description: Fetches the mandatory information for the models if set to true.,
+        required: false, type: boolean, default: true}
+      - {name: fetchTechnical, in: query, description: Fetches the technical specifications of the models if set to true.,
+        required: false, type: boolean, default: true}
+      - {name: fetchEco, in: query, description: Fetches the static efficiency and technical data if set to true. The actual fields returned depend on a tenant specific matching table in VICCI (efficiencyLabelMapping),
+        required: false, type: boolean, default: true}
+      - {name: fetchWltp, in: query, description: 'Fetches the calculated WLTP data
+          for the models if set to true. The WLTP data can either be WLTP-V data or
+          ranges data, depending on the tenant settings', required: false, type: boolean,
+        default: true}
+      - {name: fetchMedia, in: query, description: 'Fetches marketing (E.g.: Feature
+          Description Texts) and media (E.g.: 3D Render Images) assets for the models
+          if set to true.', required: false, type: boolean, default: false}
+      - {name: addErrorMps, in: query, description: 'If set to true, an error asset
+          will be added for each MediaParameterSetId which could not be retrieved',
+        required: false, type: boolean, default: false}
+      responses:
+        '200':
+          description: OK
+          schema: {$ref: '#/definitions/ModelsResponse'}
+        '204': {description: No content}
+        '400':
+          description: In case of a BadREquestError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+        '500':
+          description: In case of an InternalServerError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+  /catalogue/modelsByPattern:
+    get:
+      tags: [vis-endpoint-controller]
+      summary: Retrieve models by a model code pattern
+      description: Fetch all Models for a given model code pattern with the given Tenant. Only works if modelDataCache exists The call only retrieves models with a model code beginning with or consisting of the given model code pattern. The models are retrieved from the model data cache.
+      operationId: modelsByPatternUsingGET
+      produces: [application/json;charset=UTF-8]
+      parameters:
+      - {name: tenant, in: query, description: 'The tenant identifier you have received
+          for the usage of VICCI. Example: "VW-DE"', required: true, type: string}
+      - {name: tenantDataVersion, in: query, description: The tenant data version. If empty the latest version will be used. Every tenant has its own data version,
+        required: false, type: string}
+      - {name: ruleDate, in: query, description: 'The MBV rule date with format: yyyyMMdd.
+          Only data that is not expired at the set date will be retrieved and evaluated.
+          If empty today will be used. Example: 20191231', required: false, type: string,
+        pattern: '^((19|2[0-9])[0-9]{2})(0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])$'}
+      - {name: modelPattern, in: query, description: 'The model code pattern. If no
+          pattern is given, then all models will be returned. Only models with a model
+          code beginning with or consisting of the model code pattern will be returned.
+          Example: 12. That means models with a code like "12*" will be returned.',
+        required: false, type: string}
+      - {name: fetchPrices, in: query, description: Fetches the prices of the models if set to true.,
+        required: false, type: boolean, default: true}
+      - {name: fetchMandatory, in: query, description: Fetches the mandatory information for the models if set to true.,
+        required: false, type: boolean, default: true}
+      - {name: fetchTechnical, in: query, description: Fetches the technical specifications of the models if set to true.,
+        required: false, type: boolean, default: true}
+      - {name: fetchEco, in: query, description: Fetches the static efficiency and technical data if set to true. The actual fields returned depend on a tenant specific matching table in VICCI (efficiencyLabelMapping),
+        required: false, type: boolean, default: true}
+      - {name: fetchWltp, in: query, description: 'Fetches the calculated WLTP data
+          for the models if set to true. The WLTP data can either be WLTP-V data or
+          ranges data, depending on the tenant settings. Default value is false.',
+        required: false, type: boolean, default: false}
+      responses:
+        '200':
+          description: OK
+          schema: {$ref: '#/definitions/ModelsResponse'}
+        '204': {description: No content}
+        '400':
+          description: In case of a BadRequestError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+        '500':
+          description: In case of an InternalServerError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+  /catalogue/salesgroup/commonfeatures:
+    get:
+      tags: [vis-endpoint-controller]
+      summary: Retrieve all common features of a certain salesgroup
+      description: Retrieve all features which are common for all Models of the given salesgroup and the given Tenant. The resulting features can be equipped by each model of the given carline.
+      operationId: commonSalesgroupFeaturesUsingGET
+      produces: [application/json;charset=UTF-8]
+      parameters:
+      - {name: tenant, in: query, description: 'The tenant identifier you have received
+          for the usage of VICCI. Example: "VW-DE"', required: true, type: string}
+      - {name: tenantDataVersion, in: query, description: The tenant data version. If empty the latest version will be used. Every tenant has its own data version,
+        required: false, type: string}
+      - {name: ruleDate, in: query, description: 'The MBV rule date with format: yyyyMMdd.
+          Only data that is not expired at the set date will be retrieved and evaluated.
+          If empty today will be used. Example: 20191231', required: false, type: string,
+        pattern: '^((19|2[0-9])[0-9]{2})(0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])$'}
+      - {name: carlineKey, in: query, description: 'The optional carline key.  Example:
+          30315', required: false, type: string}
+      - {name: salesgroupKey, in: query, description: 'The salesgroup key. The result
+          will contain all common features of this salesgroup. Example: 37080', required: true,
+        type: string}
+      - {name: fetchPrices, in: query, description: Fetches the prices of features if set to true.,
+        required: false, type: boolean, default: true}
+      - {name: fetchMandatory, in: query, description: Fetches the mandatory information for the features if set to true.,
+        required: false, type: boolean, default: true}
+      - {name: fetchPackageContents, in: query, description: 'If set to true, the
+          contents of packages will be provided as individual features in the result.',
+        required: false, type: boolean, default: true}
+      - {name: fetchInvisible, in: query, description: 'If set to true, invisible
+          features that are usually hidden will be retrieved as well. Usually these
+          features are standard features that can not be customized or chosen.', required: false,
+        type: boolean, default: false}
+      - {name: fetchMarketableLevels, in: query, description: Fetches the marketable level of the features if set to true.,
+        required: false, type: boolean, default: false}
+      - {name: addErrorMps, in: query, description: 'If set to true, an error asset
+          will be added for each MediaParameterSetId which could not be retrieved',
+        required: false, type: boolean, default: false}
+      responses:
+        '200':
+          description: OK
+          schema: {$ref: '#/definitions/CommonSalesgroupFeaturesResponse'}
+        '204': {description: No content}
+        '400':
+          description: In case of a BadRequestError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+        '500':
+          description: In case of an InternalServerError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+  /catalogue/salesgroup/features:
+    get:
+      tags: [vis-endpoint-controller]
+      summary: Retrieve all features of a certain salesgroup
+      description: Retrieve all individual features for all Models of the given salesgroup and the given tenant.
+      operationId: allSalesgroupFeaturesUsingGET
+      produces: [application/json;charset=UTF-8]
+      parameters:
+      - {name: tenant, in: query, description: 'The tenant identifier you have received
+          for the usage of VICCI. Example: "VW-DE"', required: true, type: string}
+      - {name: tenantDataVersion, in: query, description: The tenant data version. If empty the latest version will be used. Every tenant has its own data version,
+        required: false, type: string}
+      - {name: ruleDate, in: query, description: 'The MBV rule date with format: yyyyMMdd.
+          Only data that is not expired at the set date will be retrieved and evaluated.
+          If empty today will be used. Example: 20191231', required: false, type: string,
+        pattern: '^((19|2[0-9])[0-9]{2})(0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])$'}
+      - {name: carlineKey, in: query, description: 'The optional carline key.  Example:
+          30315', required: false, type: string}
+      - {name: salesgroupKey, in: query, description: 'The salesgroup key. The result
+          will contain all features of this salesgroup. Example: 37080', required: true,
+        type: string}
+      - {name: fetchPrices, in: query, description: Fetches the prices of features if set to true.,
+        required: false, type: boolean, default: true}
+      - {name: fetchMandatory, in: query, description: Fetches the mandatory information for the features if set to true.,
+        required: false, type: boolean, default: true}
+      - {name: fetchPackageContents, in: query, description: 'If set to true, the
+          contents of packages will be provided as individual features in the result.',
+        required: false, type: boolean, default: true}
+      - {name: fetchInvisible, in: query, description: 'If set to true, invisible
+          features that are usually hidden will be retrieved as well. Usually these
+          features are standard features that can not be customized or chosen.', required: false,
+        type: boolean, default: false}
+      - {name: fetchMarketableLevels, in: query, description: Fetches the marketable level of the features if set to true.,
+        required: false, type: boolean, default: false}
+      - {name: addErrorMps, in: query, description: 'If set to true, an error asset
+          will be added for each MediaParameterSetId which could not be retrieved',
+        required: false, type: boolean, default: false}
+      responses:
+        '200':
+          description: OK
+          schema: {$ref: '#/definitions/CommonSalesgroupFeaturesResponse'}
+        '204': {description: No content}
+        '400':
+          description: In case of a BadRequestError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+        '500':
+          description: In case of an InternalServerError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+  /catalogue/salesgroup/modelgroups:
+    get:
+      tags: [vis-endpoint-controller]
+      summary: Retrieve all model groups for a certain salesgroup
+      description: Retrieve all model groups for the given salesgroup and the given tenant. Model group is another term for model filters. Depending on the set flags the model filters can be enriched with prices and media assets. The prices will be deliverd as the cheapest model of an individual model filter. Media assets are only retrieved for model filters with a type "EquipmentLine".
+      operationId: modelGroupsUsingGET
+      produces: [application/json;charset=UTF-8]
+      parameters:
+      - {name: tenant, in: query, description: 'The tenant identifier you have received
+          for the usage of VICCI. Example: "VW-DE"', required: true, type: string}
+      - {name: tenantDataVersion, in: query, description: The tenant data version. If empty the latest version will be used. Every tenant has its own data version,
+        required: false, type: string}
+      - {name: ruleDate, in: query, description: 'The MBV rule date with format: yyyyMMdd.
+          Only data that is not expired at the set date will be retrieved and evaluated.
+          If empty today will be used. Example: 20191231', required: false, type: string,
+        pattern: '^((19|2[0-9])[0-9]{2})(0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])$'}
+      - {name: salesgroupKey, in: query, description: 'The salesgroup key. The result
+          will contain all model groups of this salesgroup. Example: 37080', required: true,
+        type: string}
+      - name: mediaParameterSets
+        in: query
+        description: A List of MediaParameterSetIds to identify which Assets should be retrieved. If empty the default MediaParameterSetIds of the tenant will be used.
+        required: false
+        type: array
+        items: {type: string}
+      - {name: fetchPrices, in: query, description: Fetches the prices of the model groups if set to true. The prices will be formed by the cheapest models of each respective model group. Each model group will contain a reference model containing basic information about itself and its prices. This model is the cheapest model of the model group.,
+        required: false, type: boolean, default: false}
+      - {name: fetchMedia, in: query, description: 'Fetches marketing (E.g.: Feature
+          Description Texts) and media (E.g.: 3D Render Images) assets for the equipment
+          lines if set to true. Model groups must have the type "EquipmentLine" to
+          be able to get assets.', required: false, type: boolean, default: false}
+      responses:
+        '200':
+          description: OK
+          schema: {$ref: '#/definitions/ModelGroupsResponse'}
+        '204': {description: No content}
+        '400':
+          description: In case of a BadRequestError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+        '500':
+          description: In case of an InternalServerError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+  /catalogue/salesgroupDetails:
+    get:
+      tags: [vis-endpoint-controller]
+      summary: retrieve a salesgroup
+      description: Fetch a Salesgroup for a given Carline with the given Tenant and a given SaledsgroupKey. They can be enriched with additional data depending on the boolean flags.
+      operationId: salesgroupDetailsUsingGET
+      produces: [application/json;charset=UTF-8]
+      parameters:
+      - {name: tenant, in: query, description: 'The tenant identifier you have received
+          for the usage of VICCI. Example: "VW-DE"', required: true, type: string}
+      - {name: tenantDataVersion, in: query, description: The tenant data version. If empty the latest version will be used. Every tenant has its own data version,
+        required: false, type: string}
+      - {name: ruleDate, in: query, description: 'The MBV rule date with format: yyyyMMdd.
+          Only data that is not expired at the set date will be retrieved and evaluated.
+          If empty today will be used. Example: 20191231', required: false, type: string,
+        pattern: '^((19|2[0-9])[0-9]{2})(0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])$'}
+      - {name: carlineKey, in: query, description: 'The carline key. The result will
+          contain the salesgroup of this specific carline. Example: 30315', required: true,
+        type: string}
+      - {name: salesgroupKey, in: query, description: 'The salesgroup key. The salesgroup
+          key is part of the explicit definition of the model which features are to
+          be retrieved. Example: 37080', required: true, type: string}
+      - name: mediaParameterSets
+        in: query
+        description: A List of MediaParameterSetIds to identify which Assets should be retrieved. If empty the default MediaParameterSetIds of the tenant will be used.
+        required: false
+        type: array
+        items: {type: string}
+      - {name: fetchPrices, in: query, description: Fetches the price of the salesgroup if set to true. The price will be formed by the cheapest model of the respective salesgroup. The salesgroup will contain the reference model containing basic information about itself and its prices. This model is the cheapest model of the model group.,
+        required: false, type: boolean, default: true}
+      - {name: fetchMedia, in: query, description: 'Fetches marketing (E.g.: Feature
+          Description Texts) and media (E.g.: 3D Render Images) assets for the salesgroups
+          if set to true.', required: false, type: boolean, default: false}
+      - {name: addErrorMps, in: query, description: 'If set to true, an error asset
+          will be added for each MediaParameterSetId which could not be retrieved',
+        required: false, type: boolean, default: false}
+      responses:
+        '200':
+          description: OK
+          schema: {$ref: '#/definitions/SalesgroupResponse'}
+        '204': {description: No content}
+        '400':
+          description: In case of a BadRequestError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+        '500':
+          description: In case of an InternalServerError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+  /catalogue/salesgroups:
+    get:
+      tags: [vis-endpoint-controller]
+      summary: retrieve salesgroups
+      description: Fetch all Salesgroups for a given Carline with the given Tenant. They can be enriched with additional data depending on the boolean flags.
+      operationId: salesgroupsUsingGET
+      produces: [application/json;charset=UTF-8]
+      parameters:
+      - {name: tenant, in: query, description: 'The tenant identifier you have received
+          for the usage of VICCI. Example: "VW-DE"', required: true, type: string}
+      - {name: tenantDataVersion, in: query, description: The tenant data version. If empty the latest version will be used. Every tenant has its own data version,
+        required: false, type: string}
+      - {name: ruleDate, in: query, description: 'The MBV rule date with format: yyyyMMdd.
+          Only data that is not expired at the set date will be retrieved and evaluated.
+          If empty today will be used. Example: 20191231', required: false, type: string,
+        pattern: '^((19|2[0-9])[0-9]{2})(0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])$'}
+      - {name: carlineKey, in: query, description: 'The carline key. The result will
+          contain all salesgroups of this specific carline. Example: 30315', required: true,
+        type: string}
+      - name: mediaParameterSets
+        in: query
+        description: A List of MediaParameterSetIds to identify which Assets should be retrieved. If empty the default MediaParameterSetIds of the tenant will be used.
+        required: false
+        type: array
+        items: {type: string}
+      - {name: fetchPrices, in: query, description: Fetches the prices of the salesgroups if set to true. The prices will be formed by the cheapest models of each respective salesgroup. Each salesgroup will contain a reference model containing basic information about itself and its prices. This model is the cheapest model of the model group.,
+        required: false, type: boolean, default: true}
+      - {name: fetchMedia, in: query, description: 'Fetches marketing (E.g.: Feature
+          Description Texts) and media (E.g.: 3D Render Images) assets for the salesgroups
+          if set to true.', required: false, type: boolean, default: false}
+      - {name: addErrorMps, in: query, description: 'If set to true, an error asset
+          will be added for each MediaParameterSetId which could not be retrieved',
+        required: false, type: boolean, default: false}
+      responses:
+        '200':
+          description: OK
+          schema: {$ref: '#/definitions/SalesgroupsResponse'}
+        '204': {description: No content}
+        '400':
+          description: In case of a BadRequestError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+        '500':
+          description: In case of an InternalServerError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+  /catalogue/trimLayer:
+    get:
+      tags: [vis-endpoint-controller]
+      summary: Retrieves trim layers of a certain carline
+      description: Generates trim layers for a given carline with the cheapest model for each salesgroup. The result consists of multiple trim layers. A trim layer is generated for each equipment line model group in each salesgroup of the given carline. That means that a salesgroup containing five different equipment line model groups will generate five individual trim layer. Each trim layer has an individual key consisting of carline key, salesgroup key and equipment line name, for example "30100_39000_take up!", and the cheapest model of its equipment line.
+      operationId: trimLayerUsingGET
+      produces: [application/json;charset=UTF-8]
+      parameters:
+      - {name: tenant, in: query, description: 'The tenant identifier you have received
+          for the usage of VICCI. Example: "VW-DE"', required: true, type: string}
+      - {name: tenantDataVersion, in: query, description: The tenant data version. If empty the latest version will be used. Every tenant has its own data version,
+        required: false, type: string}
+      - {name: carlineKey, in: query, description: 'The carline key. The result will
+          contain trim layers for each equipment line of each salesgroup of that carline.
+          Example: 30315', required: true, type: string}
+      - {name: ruleDate, in: query, description: 'The MBV rule date with format: yyyyMMdd.
+          Only data that is not expired at the set date will be retrieved and evaluated.
+          If empty today will be used. Example: 20191231', required: false, type: string}
+      - {name: fetchPrices, in: query, description: Fetches the prices of the models if set to true.,
+        required: false, type: boolean, default: true}
+      - {name: fetchMedia, in: query, description: 'Fetches marketing (E.g.: Feature
+          Description Texts) and media (E.g.: 3D Render Images) assets for the models
+          if set to true.', required: false, type: boolean, default: true}
+      - {name: fetchMandatory, in: query, description: Fetches the mandatory information for the models if set to true.,
+        required: false, type: boolean, default: true}
+      - {name: fetchTechnical, in: query, description: Fetches the technical specifications of the models if set to true.,
+        required: false, type: boolean, default: true}
+      - {name: fetchEco, in: query, description: Fetches the static efficiency and technical data if set to true. The actual fields returned depend on a tenant specific matching table in VICCI (efficiencyLabelMapping),
+        required: false, type: boolean, default: true}
+      - {name: fetchWltp, in: query, description: 'Fetches the calculated WLTP data
+          for the models if set to true. The WLTP data can either be WLTP-V data or
+          ranges data, depending on the tenant settings', required: false, type: boolean,
+        default: false}
+      - {name: addErrorMps, in: query, description: 'If set to true, an error asset
+          will be added for each MediaParameterSetId which could not be retrieved',
+        required: false, type: boolean, default: false}
+      responses:
+        '200':
+          description: OK
+          schema: {$ref: '#/definitions/TrimLayerResponse'}
+        '204': {description: No content}
+        '400':
+          description: In case of a BadRequestError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+        '500':
+          description: In case of an InternalServerError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+  /catalogue/trimLayerDetails:
+    get:
+      tags: [vis-endpoint-controller]
+      summary: Retrieves single trim layer of a certain carline
+      description: Generates single trim layers for a given carline with the cheapest model for each salesgroup. The result consists of a single trim layer. The trim layer is generated for the equipment line model group in the salesgroup of the given carline. Each trim layer has an individual key consisting of carline key, salesgroup key and equipment line name, for example "30100_39000_take up!", and the cheapest model of its equipment line.
+      operationId: trimLayerDetailsUsingGET
+      produces: [application/json;charset=UTF-8]
+      parameters:
+      - {name: tenant, in: query, description: 'The tenant identifier you have received
+          for the usage of VICCI. Example: "VW-DE"', required: true, type: string}
+      - {name: tenantDataVersion, in: query, description: The tenant data version. If empty the latest version will be used. Every tenant has its own data version,
+        required: false, type: string}
+      - {name: ruleDate, in: query, description: 'The MBV rule date with format: yyyyMMdd.
+          Only data that is not expired at the set date will be retrieved and evaluated.
+          If empty today will be used. Example: 20191231', required: false, type: string}
+      - {name: carlineKey, in: query, description: 'The carline key. The result will
+          contain the trim layer for the equipment line of the salesgroup of that
+          carline. Example: 30315', required: true, type: string}
+      - {name: salesgroupKey, in: query, description: 'The salesgroup key. The salesgroup
+          key is part of the filtering of the explicit trim layer. Example: 37080',
+        required: true, type: string}
+      - {name: trimName, in: query, description: The trim name., required: true, type: string}
+      - {name: fetchPrices, in: query, description: Fetches the price of the model if set to true.,
+        required: false, type: boolean, default: true}
+      - {name: fetchMedia, in: query, description: 'Fetches marketing (E.g.: Feature
+          Description Texts) and media (E.g.: 3D Render Images) assets for the models
+          if set to true.', required: false, type: boolean, default: true}
+      - {name: fetchMandatory, in: query, description: Fetches the mandatory information for the model if set to true.,
+        required: false, type: boolean, default: true}
+      - {name: fetchTechnical, in: query, description: Fetches the technical specifications of the model if set to true.,
+        required: false, type: boolean, default: true}
+      - {name: fetchEco, in: query, description: Fetches the static efficiency and technical data if set to true. The actual fields returned depend on a tenant specific matching table in VICCI (efficiencyLabelMapping),
+        required: false, type: boolean, default: true}
+      - {name: fetchWltp, in: query, description: 'Fetches the calculated WLTP data
+          for the model if set to true. The WLTP data can either be WLTP-V data or
+          ranges data, depending on the tenant settings', required: false, type: boolean,
+        default: false}
+      - {name: addErrorMps, in: query, description: 'If set to true, an error asset
+          will be added for each MediaParameterSetId which could not be retrieved',
+        required: false, type: boolean, default: false}
+      responses:
+        '200':
+          description: OK
+          schema: {$ref: '#/definitions/TrimLayerDetailsResponse'}
+        '204': {description: No content}
+        '400':
+          description: In case of a BadRequestError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+        '500':
+          description: In case of an InternalServerError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+  /customerActions:
+    get:
+      tags: [ihdcc-consumer-controller]
+      summary: Retrieve the customer actions for a given context, stage and language.
+      description: The endpoint for Customer Actions gets the VICCI tenant and calls the NG-SDL endpoint /customerActions of the ihdcc-consumer. Its result is then returned.
+      operationId: customerActionsGET
+      produces: [application/json;charset=UTF-8]
+      parameters:
+      - {name: tenant, in: query, description: 'The tenant identifier you have received
+          for the usage of VICCI. Example: "VW-DE"', required: true, type: string}
+      - {name: tenantDataVersion, in: query, description: The tenant data version. If empty the latest version will be used. Every tenant has its own data version,
+        required: false, type: string}
+      - {name: ruleDate, in: query, description: 'The MBV rule date with format: yyyyMMdd.
+          Only data that is not expired at the set date will be retrieved and evaluated.
+          If empty today will be used. Example: 20191231', required: false, type: string,
+        pattern: '^((19|2[0-9])[0-9]{2})(0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])$'}
+      responses:
+        '200':
+          description: OK
+          schema: {$ref: '#/definitions/CustomerActionsResponse'}
+        '204': {description: No content}
+        '400':
+          description: In case of a BadRequestError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+        '500':
+          description: In case of an InternalServerError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+  /specialOffers:
+    get:
+      tags: [ihdcc-consumer-controller]
+      summary: Retrieve the special offer for a given context, stage and language.
+      description: The endpoint for special offers gets the VICCI tenant and calls the NG-SDL endpoint /specialOffers in ihdcc-consumer. Its result is then returned.
+      operationId: specialOffersGET
+      produces: [application/json;charset=UTF-8]
+      parameters:
+      - {name: tenant, in: query, description: 'The tenant identifier you have received
+          for the usage of VICCI. Example: "VW-DE"', required: true, type: string}
+      - {name: tenantDataVersion, in: query, description: The tenant data version. If empty the latest version will be used. Every tenant has its own data version,
+        required: false, type: string}
+      - {name: ruleDate, in: query, description: 'The MBV rule date with format: yyyyMMdd.
+          Only data that is not expired at the set date will be retrieved and evaluated.
+          If empty today will be used. Example: 20191231', required: false, type: string,
+        pattern: '^((19|2[0-9])[0-9]{2})(0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])$'}
+      responses:
+        '200':
+          description: OK
+          schema: {$ref: '#/definitions/SpecialOffersResponse'}
+        '204': {description: No content}
+        '400':
+          description: In case of a BadRequestError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+        '500':
+          description: In case of an InternalServerError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+  /tenantByDataVersion:
+    get:
+      tags: [tenant-data-version-controller]
+      summary: Retrieve tenant information for a given tenant data version.
+      description: Fetch the tenant information for a given tenant data version. The result will contain additional information like the tenant name and various data versions.
+      operationId: fromTenantDataVersionUsingGET
+      produces: [application/json;charset=UTF-8]
+      parameters:
+      - {name: tenantDataVersion, in: query, description: The tenant data version. Every tenant has its own data version by which it can be identified and retrieved.,
+        required: false, type: string}
+      responses:
+        '200':
+          description: OK
+          schema: {$ref: '#/definitions/TenantDataVersion'}
+        '400':
+          description: In case of a BadRequestError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+        '500':
+          description: In case of an InternalServerError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+  /tenantDataVersion:
+    get:
+      tags: [tenant-data-version-controller]
+      summary: Retrieve tenant information for a given tenant name and optionally a specific rule date.
+      description: Fetch the tenant information for a given tenant name and optionally a specific rule date. The result will contain additional information like the tenant name and various data versions.
+      operationId: tenantDataVersionUsingGET
+      produces: [application/json;charset=UTF-8]
+      parameters:
+      - {name: tenant, in: query, description: 'The tenant identifier you have received
+          for the usage of VICCI. Example: "VW-DE"', required: true, type: string}
+      - {name: ruleDate, in: query, description: 'The MBV rule date with format: yyyyMMdd.
+          Only data that is not expired at the set date will be retrieved and evaluated.
+          If empty today will be used. Example: 20191231', required: false, type: string,
+        pattern: '^((19|2[0-9])[0-9]{2})(0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])$'}
+      responses:
+        '200':
+          description: OK
+          schema: {$ref: '#/definitions/TenantDataVersion'}
+        '400':
+          description: In case of a BadRequestError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+        '500':
+          description: In case of an InternalServerError
+          schema: {$ref: '#/definitions/ErrorResponse'}
+definitions:
+  CarlineCustomerActions:
+    type: object
+    required: [code]
+    properties:
+      code: {type: string, description: 'Identifying code. Either the carline code,
+          salesgroup code or the trimlevel name'}
+      customerActions:
+        type: array
+        description: List of available customer actions
+        items: {type: string}
+      salesGroups:
+        type: array
+        description: List of all salesgroups of the carline with its customer actions
+        items: {$ref: '#/definitions/SalesgroupCustomerActions'}
+  CarlineSpecialOffers:
+    type: object
+    required: [code]
+    properties:
+      code: {type: string, description: 'Identifying code. Either the carline code,
+          salesgroup code or the trimlevel name'}
+      salesGroups:
+        type: array
+        description: List of all salesgroups of the carline with its special offers
+        items: {$ref: '#/definitions/SalesgroupSpecialOffers'}
+      specialOffers:
+        type: array
+        description: List of associated special offers
+        items: {$ref: '#/definitions/SpecialOffer'}
+  CarlinesResponse:
+    type: object
+    description: Contains a collection of carlines
+    properties:
+      carlines:
+        type: array
+        items: {$ref: '#/definitions/Carline'}
+  CarlineResponse:
+    type: object
+    description: Contains a carline
+    properties:
+      carline: {type: object, $ref: '#/definitions/Carline'}
+  CatalogueResponse:
+    type: object
+    description: The result of the /catalogue/overview call, consisting of a carline, a collection of the salesgroups of the carline, all models of each salesgroup and all model filters of each salesgroup.
+    properties:
+      carline: {$ref: '#/definitions/Carline'}
+      salesgroups:
+        type: array
+        items: {$ref: '#/definitions/Salesgroup'}
+      modelFilters:
+        type: array
+        items: {$ref: '#/definitions/ModelFilter'}
+      models:
+        type: array
+        items: {$ref: '#/definitions/Model'}
+  CommonCarlineFeaturesResponse:
+    type: object
+    description: Contains a list of exteriors, interiors and features of a certain carline
+    properties:
+      exteriors:
+        type: array
+        items: {$ref: '#/definitions/Feature'}
+      features:
+        type: array
+        items: {$ref: '#/definitions/Feature'}
+      interiors:
+        type: array
+        items: {$ref: '#/definitions/Feature'}
+  CommonSalesgroupFeaturesResponse:
+    type: object
+    description: Contains a list of exteriors, interiors and features of a certain salesgroup
+    properties:
+      exteriors:
+        type: array
+        items: {$ref: '#/definitions/Feature'}
+      features:
+        type: array
+        items: {$ref: '#/definitions/Feature'}
+      interiors:
+        type: array
+        items: {$ref: '#/definitions/Feature'}
+  CustomerActions:
+    type: object
+    required: [code]
+    properties:
+      code: {type: string, description: 'Identifying code. Either the carline code,
+          salesgroup code or the trimlevel name'}
+      customerActions:
+        type: array
+        description: List of available customer actions
+        items: {type: string}
+  CustomerActionsResponse:
+    type: object
+    properties:
+      carlines:
+        type: array
+        description: List of all carlines of the tenant with its customer actions
+        items: {$ref: '#/definitions/CarlineCustomerActions'}
+  FeatureGroupsResponse:
+    description: Contains a collection of feature groups
+    type: object
+    properties:
+      featureGroups:
+        type: array
+        items: {$ref: '#/definitions/FeatureGroup'}
+  FeaturesResponse:
+    description: Contains a collection of features
+    type: object
+    properties:
+      exteriors:
+        type: array
+        items: {$ref: '#/definitions/Feature'}
+      featureGroups:
+        type: array
+        items: {$ref: '#/definitions/FeatureGroup'}
+      features:
+        type: array
+        items: {$ref: '#/definitions/Feature'}
+      interiors:
+        type: array
+        items: {$ref: '#/definitions/Feature'}
+  MediaRendition:
+    type: object
+    required: [assetPath, fileExtension, height, mimeType, url, width]
+    properties:
+      assetPath: {type: string, description: Identifier of the asset}
+      fileExtension: {type: string, description: File extension of the asset}
+      fileSize: {type: integer, format: int32, description: File size of the asset}
+      height: {type: integer, format: int32, description: Height of the asset accesible via the url in px}
+      mimeType: {type: string, description: MIME type of the asset}
+      url: {type: string, description: URL to retrieve the asset in the given resolution}
+      width: {type: integer, format: int32, description: Width of the asset accessible via the url in px}
+  ModelGroupsResponse:
+    description: Contains a list of model groups
+    type: object
+    properties:
+      modelFilters:
+        type: array
+        items: {$ref: '#/definitions/ModelFilter'}
+  ModelsResponse:
+    description: Contains a list of models
+    type: object
+    properties:
+      models:
+        type: array
+        items: {$ref: '#/definitions/Model'}
+  SalesgroupCustomerActions:
+    type: object
+    required: [code]
+    properties:
+      code: {type: string, description: 'Identifying code. Either the carline code,
+          salesgroup code or the trimlevel name'}
+      customerActions:
+        type: array
+        description: List of available customer actions
+        items: {type: string}
+      trimLevels:
+        type: array
+        description: List of all trimlevels of the salesgroup with its customer actions
+        items: {$ref: '#/definitions/CustomerActions'}
+  SalesgroupSpecialOffers:
+    type: object
+    required: [code]
+    properties:
+      code: {type: string, description: 'Identifying code. Either the carline code,
+          salesgroup code or the trimlevel name'}
+      specialOffers:
+        type: array
+        description: List of associated special offers
+        items: {$ref: '#/definitions/SpecialOffer'}
+      trimLevels:
+        type: array
+        description: List of all trimlevels of the salesgroup with its special offers
+        items: {$ref: '#/definitions/SpecialOffers'}
+  SalesgroupsResponse:
+    description: Contains a collection of salesgroups
+    type: object
+    properties:
+      salesgroups:
+        type: array
+        items: {$ref: '#/definitions/Salesgroup'}
+  SalesgroupResponse:
+    description: Contains a salesgroup
+    type: object
+    properties:
+      salesgroup: {type: object, $ref: '#/definitions/Salesgroup'}
+  SpecialOffer:
+    type: object
+    properties:
+      detailImage:
+        type: array
+        items: {$ref: '#/definitions/MediaRendition'}
+      detailSubtitle: {type: string}
+      detailTitle: {type: string}
+      id: {type: string}
+      linkTarget: {type: string}
+      linkTitle: {type: string}
+      linkUrl: {type: string}
+      priority: {type: string}
+      teaserImage:
+        type: array
+        items: {$ref: '#/definitions/MediaRendition'}
+      teaserTitle: {type: string}
+      textColor: {type: string}
+      validFrom: {type: string}
+      validTo: {type: string}
+  SpecialOffers:
+    type: object
+    required: [code]
+    properties:
+      code: {type: string, description: 'Identifying code. Either the carline code,
+          salesgroup code or the trimlevel name'}
+      specialOffers:
+        type: array
+        description: List of associated special offers
+        items: {$ref: '#/definitions/SpecialOffer'}
+  SpecialOffersResponse:
+    type: object
+    properties:
+      carlines:
+        type: array
+        description: List of all carlines of the tenant with its special offers
+        items: {$ref: '#/definitions/CarlineSpecialOffers'}
+  TrimLayerResponse:
+    description: Contains a collection of trim layers
+    type: object
+    properties:
+      trimLayers:
+        type: array
+        items: {$ref: '#/definitions/TrimLayer'}
+  TrimLayerDetailsResponse:
+    description: Contains a trim layers
+    type: object
+    properties:
+      trimLayer: {type: object, $ref: '#/definitions/TrimLayer'}
+  TrimLayer:
+    description: Contains an individual key (consisting of carline key, underscore, salesgroup key, underscore and equipment line name), the salesgroup name and the cheapest model of the equipment line of the trim layer
+    type: object
+    properties:
+      key: {type: string}
+      salesgroupName: {type: string}
+      model: {$ref: '#/definitions/Model'}
+  ErrorResponse:
+    type: object
+    properties:
+      code: {type: integer, format: int32}
+      description: {type: string}
+      details:
+        type: array
+        items: {type: string}
+      message: {type: string}
+      name: {type: string}
+  JsonNode: {type: object}
+  CodeType:
+    type: object
+    properties:
+      value: {type: string}
+      listID: {type: string}
+      listVersionID: {type: string}
+      name: {type: string}
+      languageID: {type: string}
+  NoteType:
+    type: object
+    properties:
+      value: {type: string}
+      languageID: {type: string}
+      author: {type: string}
+      securityIND: {type: string}
+  MediaAsset:
+    type: object
+    properties:
+      description: {type: string}
+      mpsId: {type: string}
+      referenceKey: {type: string}
+      type:
+        type: string
+        enum: [TEXT, URL, INFO, WARN, ERROR, JSON]
+      asset: {$ref: '#/definitions/JsonNode'}
+  Price:
+    type: object
+    properties:
+      currency: {type: string}
+      discountable: {type: boolean}
+      price: {type: number, format: double}
+      type: {type: string}
+      vatIncluded: {type: boolean}
+  TenantDataVersion:
+    type: object
+    properties:
+      mbvDataVersion: {type: string}
+      ruleDate: {type: string}
+      tenant: {type: string}
+      tenantDataVersion: {type: string}
+      brandDataVersion: {type: string}
+      xSet: {type: string}
+      iSet: {type: string}
+      dataVersionSalt: {type: integer}
+      pdsSalt: {type: integer}
+      ihdccSalt: {type: integer}
+      masSalt: {type: integer}
+      rdcSalt: {type: integer}
+      releaseVersion: {type: string}
+  Carline:
+    type: object
+    properties:
+      code: {type: string}
+      isRestricted: {type: boolean}
+      name: {type: string}
+      referenceModels:
+        type: array
+        items: {$ref: '#/definitions/ReferenceModel'}
+      mediaAssets:
+        type: array
+        items: {$ref: '#/definitions/MediaAsset'}
+  EfficiencyLabelType:
+    type: object
+    properties:
+      brandName: {type: string}
+      consumptionEmissions:
+        type: array
+        items: {$ref: '#/definitions/ConsumptionEmissionType'}
+      emissionClass: {$ref: '#/definitions/EmissionClassType'}
+      energyCarriers:
+        type: array
+        items: {type: string}
+      energyEfficiencyClass: {$ref: '#/definitions/EnergyEfficiencyClassType'}
+      modelName: {type: string}
+  EmissionClassType:
+    type: object
+    properties:
+      name: {type: string}
+      value: {type: string}
+  EnergyEfficiencyClassType:
+    type: object
+    properties:
+      name: {type: string}
+      value: {type: string}
+  ConsumptionEmissionType:
+    type: object
+    properties:
+      consumptions:
+        type: array
+        items: {$ref: '#/definitions/ConsumptionType'}
+      emissions:
+        type: array
+        items: {$ref: '#/definitions/ConsumptionType'}
+      fuelType: {type: string}
+      isPrimary: {type: boolean}
+  ConsumptionType:
+    type: object
+    properties:
+      basis: {type: string}
+      kind: {type: string}
+      name: {type: string}
+      value: {$ref: '#/definitions/MeasuredType'}
+  MeasuredType:
+    type: object
+    properties:
+      unit: {type: string}
+      value: {type: string}
+  Feature:
+    type: object
+    properties:
+      code: {type: string, pattern: '^[a-zA-Z0-9\s]{1,10}'}
+      designElements:
+        type: array
+        items: {$ref: '#/definitions/DesignElement'}
+      isExterior: {type: boolean}
+      isIncluded: {type: boolean}
+      isInterior: {type: boolean}
+      isPackageFeature: {type: boolean}
+      isRestricted: {type: boolean}
+      isSelectable: {type: boolean}
+      isStandard: {type: boolean}
+      isUserSelected: {type: boolean}
+      isVisible: {type: boolean}
+      mandatoryInformation:
+        type: array
+        items: {type: string}
+      name: {type: string}
+      packages:
+        type: array
+        items: {type: string}
+      prices:
+        type: array
+        items: {$ref: '#/definitions/Price'}
+      packageFeatures:
+        type: array
+        items: {type: string}
+      mediaAssets:
+        type: array
+        items: {$ref: '#/definitions/MediaAsset'}
+      featureCategories:
+        type: array
+        items: {type: string}
+      marketableLevel: {type: integer}
+  DesignElement:
+    type: object
+    properties:
+      element: {type: string}
+      color: {type: string}
+  FeatureFamily:
+    type: object
+    properties:
+      features:
+        type: array
+        items: {$ref: '#/definitions/Feature'}
+      name: {type: string}
+      key: {type: string}
+  FeatureFamilyWithFeatureRefs:
+    type: object
+    properties:
+      features:
+        type: array
+        items: {$ref: '#/definitions/FeatureReference'}
+      name: {type: string}
+      key: {type: string}
+      truncated: {type: boolean}
+  FeatureGroup:
+    type: object
+    properties:
+      featureFamilies:
+        type: array
+        items: {$ref: '#/definitions/FeatureFamily'}
+      folder: {type: string}
+      name: {type: string}
+      standaloneFeatures:
+        type: array
+        items: {$ref: '#/definitions/Feature'}
+      view: {type: string}
+  FeatureGroupWithFeatureRefs:
+    type: object
+    properties:
+      featureFamilies:
+        type: array
+        items: {$ref: '#/definitions/FeatureFamilyWithFeatureRefs'}
+      folder: {type: string}
+      name: {type: string}
+      standaloneFeatures:
+        type: array
+        items: {$ref: '#/definitions/FeatureReference'}
+      view: {type: string}
+  FeatureReference:
+    type: object
+    properties:
+      code: {type: string}
+  VgsFeatureReference:
+    type: object
+    properties:
+      code: {type: string, pattern: '^[a-zA-Z0-9\s]{1,10}'}
+  FeatureCategorization:
+    type: object
+    description: This Object contains the feature categories for tagging features with specific feature categories (out of a featureGroup)
+    required: [id, lasche, view]
+    properties:
+      id: {type: string, description: The unique id for this feature categorization}
+      lasche: {type: string, description: Options within this Lasche are wheels}
+      view: {type: string, description: Needed in combination with lasche - Options within this Lasche are wheels}
+      subFeatureGroupName: {type: string, description: 'If specified, then options
+          within this subfeaturegroup of the given Lasche are wheels. If not specified,
+          then all subfeaturegroups of the Lasche are included.'}
+      prFamilyId: {type: string, description: 'If specified, then only the options
+          with this PR-Family ID are wheels'}
+      dominant: {type: boolean, description: 'If "false", then all feature categorizations
+          are used for loading features. If "true" then only dominant feature categorizations
+          are being considered for loading features.'}
+  FinancingData:
+    type: object
+    properties:
+      financingProductUID: {$ref: '#/definitions/FinancingProduct'}
+      financingProduct: {$ref: '#/definitions/FinancingProduct'}
+      financingDetails:
+        type: array
+        items: {$ref: '#/definitions/FinancingDetail'}
+  FinancingProduct:
+    type: object
+    properties:
+      value: {type: string}
+      description: {type: string}
+  FinancingDetail:
+    type: object
+    properties:
+      value: {type: string}
+      type: {type: string}
+      label: {type: string}
+      unit: {type: string}
+  Model:
+    type: object
+    properties:
+      carlineRef: {type: string}
+      carlineName: {type: string}
+      salesgroupRef: {type: string}
+      salesgroupName: {type: string}
+      code: {type: string}
+      name: {type: string}
+      longName: {type: string}
+      year: {type: string}
+      version: {type: string}
+      extensions:
+        type: array
+        items: {type: string}
+      prices:
+        type: array
+        items: {$ref: '#/definitions/Price'}
+      isRestricted: {type: boolean}
+      mandatoryInformation:
+        type: array
+        items: {type: string}
+      modelFilters:
+        type: array
+        items: {$ref: '#/definitions/ModelFilter'}
+      mediaAssets:
+        type: array
+        items: {$ref: '#/definitions/MediaAsset'}
+      equipmentLine: {type: string}
+      technicalSpecifications:
+        type: array
+        items: {$ref: '#/definitions/TechnicalSpecificationFamily'}
+      efficiencyLabel: {$ref: '#/definitions/EfficiencyLabelType'}
+      technicalData: {$ref: '#/definitions/TechnicalData'}
+      wltpData: {$ref: '#/definitions/WltpData'}
+      metaData:
+        type: object
+        additionalProperties: {type: string}
+  ModelFilter:
+    type: object
+    properties:
+      id: {type: string}
+      text: {type: string}
+      type: {type: string}
+      localizedName: {type: string}
+      referenceModels:
+        type: array
+        items: {$ref: '#/definitions/ReferenceModel'}
+      mediaAssets:
+        type: array
+        items: {$ref: '#/definitions/MediaAsset'}
+  ReferenceModel:
+    type: object
+    properties:
+      carline: {type: string}
+      carlineName: {type: string}
+      salesgroup: {type: string}
+      salesgroupName: {type: string}
+      modelCode: {type: string}
+      modelName: {type: string}
+      modelLongName: {type: string}
+      modelVersion: {type: string}
+      modelYear: {type: string}
+      metaData:
+        type: object
+        additionalProperties: {type: string}
+      extensions:
+        type: array
+        items: {type: string}
+      prices:
+        type: array
+        items: {$ref: '#/definitions/Price'}
+      priceGroup: {type: string}
+      priceType: {type: string}
+  Salesgroup:
+    type: object
+    properties:
+      carlines:
+        type: array
+        items: {type: string}
+      code: {type: string}
+      isRestricted: {type: boolean}
+      modelYear: {type: string}
+      name: {type: string}
+      referenceModels:
+        type: array
+        items: {$ref: '#/definitions/ReferenceModel'}
+      mediaAssets:
+        type: array
+        items: {$ref: '#/definitions/MediaAsset'}
+  TechnicalData:
+    type: object
+    description: Contains all possible technical data
+    properties:
+      cylinderCnt: {description: '', $ref: '#/definitions/TechnicalDataValue'}
+      seatCnt: {description: '', $ref: '#/definitions/TechnicalDataValue'}
+      doorCnt: {description: '', $ref: '#/definitions/TechnicalDataValue'}
+      bedCnt: {description: '', $ref: '#/definitions/TechnicalDataValue'}
+      bodyStyle: {description: '', $ref: '#/definitions/TechnicalDataValue'}
+      axleCnt: {description: '', $ref: '#/definitions/TechnicalDataValue'}
+      hasDpf: {description: '', $ref: '#/definitions/TechnicalDataValue'}
+      vehicleLength: {description: '', $ref: '#/definitions/TechnicalDataValue'}
+      capacity: {description: '', $ref: '#/definitions/TechnicalDataValue'}
+      power: {description: '', $ref: '#/definitions/TechnicalDataValue'}
+      transmission: {description: '', $ref: '#/definitions/TechnicalDataValue'}
+      engine: {description: '', $ref: '#/definitions/TechnicalDataValue'}
+      curbWeight: {description: '', $ref: '#/definitions/TechnicalDataValue'}
+      grossWeight: {description: '', $ref: '#/definitions/TechnicalDataValue'}
+      dimensions: {description: '', $ref: '#/definitions/TechnicalDataDimensions'}
+      load: {description: '', $ref: '#/definitions/TechnicalDataLoad'}
+      drive: {description: '', $ref: '#/definitions/TechnicalDataValue'}
+      vehicleCategory: {description: '', $ref: '#/definitions/TechnicalDataValue'}
+  TechnicalDataDimensions:
+    type: object
+    description: Contains all possible technical data
+    properties:
+      length: {description: '', $ref: '#/definitions/TechnicalDataValue'}
+      width: {description: '', $ref: '#/definitions/TechnicalDataValue'}
+      height: {description: '', $ref: '#/definitions/TechnicalDataValue'}
+      wheelBase: {description: '', $ref: '#/definitions/TechnicalDataValue'}
+      tracks:
+        type: array
+        items: {$ref: '#/definitions/TechnicalDataValue'}
+      loadCompartments:
+        type: array
+        items: {$ref: '#/definitions/TechnicalDataValue'}
+      loadCompartmentVolume: {description: '', $ref: '#/definitions/TechnicalDataValue'}
+  TechnicalDataLoad:
+    type: object
+    description: Contains all possible technical data
+    properties:
+      curbWeight: {description: '', $ref: '#/definitions/TechnicalDataValue'}
+      gvwr: {description: '', $ref: '#/definitions/TechnicalDataValue'}
+      payload: {description: '', $ref: '#/definitions/TechnicalDataValue'}
+      roofLoad: {description: '', $ref: '#/definitions/TechnicalDataValue'}
+      axleLoad:
+        type: array
+        items: {$ref: '#/definitions/TechnicalDataValue'}
+      trailerLoad:
+        type: array
+        items: {$ref: '#/definitions/TechnicalDataValue'}
+  TechnicalDataValue:
+    type: object
+    description: Contains all possible technical data
+    properties:
+      name: {description: '', type: string}
+      code: {description: '', $ref: '#/definitions/CodeType'}
+      textValue: {description: '', type: string}
+      numberValue: {description: '', type: number}
+      booleanValue: {description: '', type: boolean}
+      unit: {description: '', type: string}
+  TechnicalSpecificationFamily:
+    type: object
+    properties:
+      family: {$ref: '#/definitions/CodeType'}
+      descriptions:
+        type: array
+        items: {$ref: '#/definitions/NoteType'}
+      specifications:
+        type: array
+        items: {$ref: '#/definitions/TechnicalSpecification'}
+  TechnicalSpecification:
+    type: object
+    properties:
+      descriptions:
+        type: array
+        items: {$ref: '#/definitions/NoteType'}
+      code: {$ref: '#/definitions/CodeType'}
+      alternateTechnicalCodes:
+        type: array
+        items: {$ref: '#/definitions/CodeType'}
+      value: {type: string}
+      unit: {type: string}
+      measureUnit: {type: string}
+      measureValue: {type: number}
+  ValidationData:
+    type: object
+    properties:
+      validCarline: {type: boolean}
+      validSalesgroup: {type: boolean}
+      validModel: {type: boolean}
+      conflicted: {type: boolean, default: false}
+      deselectionCandidates:
+        type: array
+        items: {$ref: '#/definitions/Feature'}
+      resolved: {type: boolean, default: false}
+      selectionCandidates:
+        type: array
+        items: {$ref: '#/definitions/Feature'}
+      solutionCandidates:
+        type: array
+        items: {$ref: '#/definitions/ValidationHint'}
+      conflict: {$ref: '#/definitions/Conflict'}
+      exteriorMissing: {type: boolean, default: false}
+      interiorMissing: {type: boolean, default: false}
+      protocol:
+        type: array
+        items: {type: string}
+  ValidationHint:
+    type: object
+    properties:
+      addedFeatures:
+        type: array
+        items: {$ref: '#/definitions/Feature'}
+      removedFeatures:
+        type: array
+        items: {$ref: '#/definitions/Feature'}
+      resolve: {type: boolean}
+      tags:
+        type: array
+        items: {type: string}
+      updatedFeatures:
+        type: array
+        items: {$ref: '#/definitions/FeatureChange'}
+      prices:
+        type: array
+        items: {$ref: '#/definitions/Price'}
+      totalPriceDifferenceForConfiguration:
+        type: array
+        items: {$ref: '#/definitions/Price'}
+      totalPriceDifferenceForUpdatedFeatures:
+        type: array
+        items: {$ref: '#/definitions/Price'}
+  Conflict:
+    type: object
+    properties:
+      addedFeatures:
+        type: array
+        items: {$ref: '#/definitions/Feature'}
+      removedFeatures:
+        type: array
+        items: {$ref: '#/definitions/Feature'}
+      prices:
+        type: array
+        items: {$ref: '#/definitions/Price'}
+  FeatureChange:
+    type: object
+    properties:
+      code: {type: string, description: the feature code}
+      price: {type: number, description: the updated price}
+  VehicleConfiguration:
+    type: object
+    properties:
+      carlineKey: {type: string}
+      carlineName: {type: string}
+      salesgroupKey: {type: string}
+      salesgroupName: {type: string}
+      modelKey: {type: string}
+      modelLongName: {type: string}
+      modelName: {type: string}
+      modelVersion: {type: string}
+      modelYear: {type: string}
+      orderKey: {type: string}
+      modelMetaData:
+        type: object
+        additionalProperties: {type: string}
+      exterior: {$ref: '#/definitions/Feature'}
+      interior: {$ref: '#/definitions/Feature'}
+      features:
+        type: array
+        items: {$ref: '#/definitions/Feature'}
+      mandatoryInformation:
+        type: array
+        items: {type: string}
+      checkDate: {type: string}
+      modelFilters:
+        type: array
+        items: {$ref: '#/definitions/ModelFilter'}
+      configurationPrice: {$ref: '#/definitions/ConfigurationPrice'}
+      financing:
+        type: array
+        items: {$ref: '#/definitions/FinancingData'}
+      technicalSpecifications:
+        type: array
+        items: {$ref: '#/definitions/TechnicalSpecificationFamily'}
+      technicalData: {$ref: '#/definitions/TechnicalData'}
+      efficiencyLabel: {$ref: '#/definitions/EfficiencyLabelType'}
+      wltpData: {$ref: '#/definitions/WltpData'}
+      mediaAssets:
+        type: array
+        items: {$ref: '#/definitions/MediaAsset'}
+      applicationCode: {type: string}
+      nationalSalesProgram: {type: string}
+      difList:
+        type: object
+        additionalProperties: {type: string}
+  VgsVehicleConfiguration:
+    type: object
+    properties:
+      carlineKey: {type: string, pattern: '^[a-zA-Z0-9\s]{1,20}'}
+      salesgroupKey: {type: string, pattern: '^[a-zA-Z0-9\s]{1,20}'}
+      modelKey: {type: string, pattern: '^[a-zA-Z0-9\s\$]{1,400}'}
+      modelVersion: {type: string, pattern: '^[a-zA-Z0-9]{1}'}
+      modelYear: {type: string, pattern: '^[0-9]{4}'}
+      orderKey: {type: string}
+      exterior: {$ref: '#/definitions/VgsFeatureReference'}
+      interior: {$ref: '#/definitions/VgsFeatureReference'}
+      features:
+        type: array
+        items: {$ref: '#/definitions/VgsFeatureReference'}
+      financing:
+        type: array
+        items: {$ref: '#/definitions/FinancingData'}
+  ConfigurationPrice:
+    type: object
+    properties:
+      total:
+        type: array
+        items: {$ref: '#/definitions/Price'}
+      model:
+        type: array
+        items: {$ref: '#/definitions/Price'}
+      equipment:
+        type: array
+        items: {$ref: '#/definitions/Price'}
+      color:
+        type: array
+        items: {$ref: '#/definitions/Price'}
+  WltpData:
+    type: object
+    description: ''
+    properties:
+      headData: {$ref: '#/definitions/JsonNode'}
+      requestData: {$ref: '#/definitions/JsonNode'}
+      driveType: {description: '', type: string}
+      fuelTypes:
+        type: array
+        items: {type: string}
+      categories:
+        type: array
+        items: {$ref: '#/definitions/WltpCategory'}
+  WltpCategory:
+    type: object
+    description: ''
+    properties:
+      type: {description: '', type: string}
+      fuelType: {description: '', type: string}
+      values:
+        type: array
+        items: {$ref: '#/definitions/WltpValue'}
+  WltpValue:
+    type: object
+    description: ''
+    properties:
+      key: {description: '', type: string}
+      textValue: {description: '', type: string}
+      numberValue: {description: '', type: number}
+      unit: {description: '', type: string}
